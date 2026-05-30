@@ -4,6 +4,8 @@
 
 This is a small demo project that supports my sharing session material on Opencode
 
+---
+
 ## Features
 
 > This is a simple demo social media app, inspired by instagram and twitter.
@@ -36,6 +38,8 @@ This is a small demo project that supports my sharing session material on Openco
   - Get list of followers
   - Get list of followings
 
+---
+
 ## Tech Stacks
 
 ### Frontend
@@ -49,12 +53,13 @@ This is a small demo project that supports my sharing session material on Openco
 - `daisy-ui`: tailwindcss plugin, provides convenience in writing component styles based on TailwindCSS, lesser class names on the template
 - `axios`: handling async requests, especially API calls
 - `@tanstack/vue-query`: handling the loading, error, data, caching, polling for the async states/API calls
+- `vee-validate`: managing form states, handling field validations
 
 ### Backend - API
 
 > Using free API from `https://freeapi.app/`
 
-#### Auth API Endpoints
+#### Auth & Users API Endpoints
 
 > Curated endpoints from: `https://freeapi.app/docs#tag/authentication`
 
@@ -90,7 +95,6 @@ This is a small demo project that supports my sharing session material on Openco
 - DELETE /social-media/posts/{postId} — Delete a post
 - GET /social-media/posts/get/my — Get authenticated user's posts
 - GET /social-media/posts/get/u/{username} — Get posts by username
-<!-- - GET /social-media/posts/get/t/{tag} — Get posts by tag -->
 
 **Comments & Interactions**
 
@@ -118,6 +122,8 @@ This is a small demo project that supports my sharing session material on Openco
 3. name: Terra Clark, username: smallladybug901, password: elway7
 4. name: Dibach Gocko, username: heavysnake675, password: wowwow
 5. name: Tanja Španović, username: greentiger564, password: calgary
+
+---
 
 ## Guiding Principles
 
@@ -168,33 +174,154 @@ Knowledge and working materials in this workspace are organized by purpose. Use 
 
 This section contains the comprehensive principles for the Agent to work on the codebase properly
 
+#### Brief on Project Structure
+
+#### Working with Typescript
+
+- Prefer `type` over `interface` when defining Typescript typedefs
+- Leverage type union and intersection if it's needed to create derived types or combined types
+- Leverage utility types such as `Partial`, `Pick`, `Omit`, `Record` when needed
+- Avoid the usage of `any`, if you feel like it's impossible not to do so, resort to `unknown` instead
+- When writing a `const` with the type of object, prefix it with `as const` to automatically infer the type from the const value itself
+
 #### Vue Instance
 
-TBD
+- The primary Vue instance of the app is located in `./src/main.ts`
+- We can add any plugins to the Vue instance by invoking `.use(pluginInstance)` on the instance if needed
+- The app shell component is `src/App.vue`, it's responsible for managing the app routes, layouts, .etc
 
 #### Managing Client-Side Routing
 
-TBD
+**Writing Routes**
+
+**Leverage Dynamic Loading to Reduce Bundle Size**
+This is the default, always import the page component dynamically. Therefore the client won't have to spend more bandwidth to load the chunks
+
+Example:
+
+```typescript
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    // CORRECT
+    {
+      path: "/something",
+      component: () => import("@/pages/protected/SomePage.vue"),
+    },
+
+    // INCORRECT
+    {
+      path: "/something",
+      component: SomePage, // assume SomePage is already imported at the top level
+    },
+  ],
+});
+```
+
+**Leverage Route meta Attribute When Needed**
+It is possible to provide any kind of attributes into the route's `meta` so the page component behaves in a certain way.
+
+Example:
 
 #### Vue Component
 
+**Managing Import In Script**
+
+- Unused imports must either be commented or removed altogether, it adds up unnecessary bundle size to the chunk
+
+**Writing Props, Reactive States, Computed States, and Methods**
 TBD
 
 #### Component Styling with TailwindCSS and DaisyUI
 
+**The Tailwind Config**
 TBD
+
+**Using Tailwind Classes on Elements & Components**
+TBD
+
+**Abstracting Tailwind Classes with Arbitrary Class Names**
+TBD
+
+**Leveraging DaisyUI, Lesser Tailwind Classes on Elements & Components**
+TBD
+
+#### Managing API Calls and Async States
+
+**API Configuration**
+
+- Location: `./src/configs/api.ts`
+- Contains `API_ENDPOINTS` which is the endpoint mapping for each domain. This is used by the API functions in the `./src/services`
+
+**Axios Client**
+
+- Location: `./src/configs/axios.client.ts`
+- A custom `axios` instance that handles request headers, intercepts request before it's sent, and intercepts response before serving it to the client
+- This instance must be used by the API functions in the `./src/services` which are responsible for making calls to the API we need
+
+**Typedefs and DTO**
+
+- Types: `./src/types`
+  - Contains the typedefs that can be used by the Vue components, helper functions, configs, DTOs, and constants across the app
+- DTOs: `./src/types/dto`
+  - Type definitions used to annotate the request payload, request parameters, and response schemas
+
+**API Functions/Services**
+
+- Location: `./src/services`
+- Responsibilities:
+  - Provides functions that calls to certain API endpoint with the custom axios client instance
+- Rules:
+  - Every function must be annotated with Typescript, be it the request
+
+**Query & Mutation Hooks**
+
+- Location: `./src/queries`
+- Responsibilities:
+  - Provides query key factory, used by the query hooks to manage the data caching
+  - Provides query hooks that invokes certain API function/service and returns the necessary attributes, such as data, loading, error, certain Vue computed states. Key phrase: data fetching
+  - Provides mutation hooks that invokes certain API function/service to execute data mutation on the backend. Returns certain attributes like data, loading, error. It can invalidate certain cached query if needed. Key phrase: data mutation
 
 #### Vue Composables/Hooks
 
-TBD
+**Reusable Hooks**
+
+- Location: `./src/composables`
+- Responsiblities:
+  - Contains any kind of composables/hooks that can be used by the Vue components across the app
 
 #### Working with Git
 
-TBD
+- Allowed commands:
+  - `git status`
+  - `git logs *`
+- Prohibited commands:
+  - `git add`
+  - `git commit`
+  - `git push`
+  - `git stash`
+  - `git reset`
+- Reason: embracing human-in-the-loop workflow, prevents accidental staging, commission, and pushes
 
 #### Working with Git Pull Requests
 
-TBD
+- Leverage Github CLI `gh` command on the terminal
+- What you can do:
+  - Read Github PR
+  - Create Github PR
+  - Update Github PR
+  - Close Github PR
+- Execution protocol:
+  - Read Github PR
+    - Ask user about the target branch to be checked
+  - Github PR Creation and Update
+    - Ask user to provide the intention of the changes on the branch
+    - Ask user about the target branch to merge the changes into
+    - Ask user about the base branch, only if not mentioned by user
+    - Synthesis a baseline PR title and description when you're asked to create PR
+    - Re-synthesis the PR title and description when you're asked to update PR
+    - It is important to analyse the commit messages on the base branch for more accurate synthesis
+    - Ask the user if you need to read the actual change diffs for far more accurate synthesis, complementing the insights you get from the commit message.
 
 #### Working with Git Worktree
 
