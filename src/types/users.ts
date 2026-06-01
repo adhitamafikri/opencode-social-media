@@ -4,6 +4,31 @@ export type MediaAsset = {
   url: string;
 };
 
+export type AuthUser = {
+  __v: number;
+  _id: string;
+  avatar: MediaAsset;
+  createdAt: string;
+  email: string;
+  isEmailVerified: boolean;
+  loginType: string;
+  role: string;
+  updatedAt: string;
+  username: string;
+};
+
+export type AuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+export type AvatarUpdateUser = AuthUser & {
+  emailVerificationExpiry: string;
+  emailVerificationToken: string;
+  password: string;
+  refreshToken: string;
+};
+
 export type User = {
   _id: string;
   username: string;
