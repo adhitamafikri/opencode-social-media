@@ -14,6 +14,7 @@ const authRoutes: RouteRecordRaw[] = [
         component: () => import("@/pages/auth/Register.vue"),
         meta: {
           requiresAuth: false,
+          layout: 'auth',
         },
       },
       {
@@ -22,6 +23,7 @@ const authRoutes: RouteRecordRaw[] = [
         component: () => import("@/pages/auth/Login.vue"),
         meta: {
           requiresAuth: false,
+          layout: 'auth',
         },
       },
     ],
@@ -35,6 +37,7 @@ const protectedRoutes: RouteRecordRaw[] = [
     component: () => import("@/pages/protected/Profile.vue"),
     meta: {
       requiresAuth: true,
+      layout: 'primary',
     },
   },
   {
@@ -43,6 +46,7 @@ const protectedRoutes: RouteRecordRaw[] = [
     component: () => import("@/pages/protected/Feed.vue"),
     meta: {
       requiresAuth: true,
+      layout: 'primary',
     },
   },
   {
@@ -51,6 +55,7 @@ const protectedRoutes: RouteRecordRaw[] = [
     component: () => import("@/pages/protected/Bookmarks.vue"),
     meta: {
       requiresAuth: true,
+      layout: 'primary',
     },
   },
 ];
@@ -64,6 +69,7 @@ export const router = createRouter({
       component: () => import("./pages/Home.vue"),
       meta: {
         requiresAuth: false,
+        layout: 'public',
       },
     },
 

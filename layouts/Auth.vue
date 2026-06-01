@@ -1,15 +1,14 @@
 <template>
-  <header>Header</header>
+  <header>Auth Layout</header>
   <main>
     <slot />
   </main>
-  <footer>Footer</footer>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
 
 onMounted(() => {
-  console.log("Page: Home");
+  console.log("Layout: Auth");
 });
 </script>

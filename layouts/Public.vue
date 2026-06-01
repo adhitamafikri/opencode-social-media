@@ -1,14 +1,15 @@
 <template>
-  <header>Auth Layout</header>
+  <header>Public</header>
   <main>
     <slot />
   </main>
+  <footer>Footer</footer>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
 
 onMounted(() => {
-  console.log("Page: Auth Layout");
+  console.log("Layout: Public");
 });
 </script>
