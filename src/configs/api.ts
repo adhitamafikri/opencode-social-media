@@ -5,7 +5,7 @@ export const API_ENDPOINTS = {
   profile: `${API_BASE_URL}/social-media/profile`,
   posts: `${API_BASE_URL}/social-media/posts`,
   comments: `${API_BASE_URL}/social-media/comments`,
-  likes: `${API_BASE_URL}/social-media/likes`,
+  likes: `${API_BASE_URL}/social-media/like`,
   bookmarks: `${API_BASE_URL}/social-media/bookmarks`,
   follow: `${API_BASE_URL}/social-media/follow`,
 };
