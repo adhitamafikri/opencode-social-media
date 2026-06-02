@@ -2,6 +2,10 @@ import { computed } from "vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { commentsKeys, postsKeys } from "@/queries/key-factory";
 import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
+import {
   createComment,
   deleteComment,
   getCommentsByPost,
@@ -16,6 +20,11 @@ import type {
   UpdateCommentParams,
   UpdateCommentRequest,
 } from "@/types/dto/comments-request";
+import type {
+  CreateCommentResponse,
+  DeleteCommentResponse,
+  UpdateCommentResponse,
+} from "@/types/dto/comments-response";
 
 type GetCommentsByPostQueryOptions = {
   enabled?: boolean;
@@ -73,17 +82,27 @@ export function useQueryGetCommentsByPost(
   };
 }
 
-export function useMutationCreateComment() {
+export function useMutationCreateComment(
+  handlers?: MutationHookHandlers<
+    CreateCommentResponse,
+    CreateCommentMutationVariables
+  >,
+) {
   const queryClient = useQueryClient();
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: commentsKeys.root() }),
+        queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
+      ]);
+    },
+  });
   const mutation = useMutation({
     mutationFn: ({ params, payload }: CreateCommentMutationVariables) =>
       createComment(params, payload),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: commentsKeys.root() }),
-        queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
-      ]);
-    },
+    onSuccess,
+    onError,
   });
 
   return {
@@ -96,17 +115,27 @@ export function useMutationCreateComment() {
   };
 }
 
-export function useMutationUpdateComment() {
+export function useMutationUpdateComment(
+  handlers?: MutationHookHandlers<
+    UpdateCommentResponse,
+    UpdateCommentMutationVariables
+  >,
+) {
   const queryClient = useQueryClient();
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: commentsKeys.root() }),
+        queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
+      ]);
+    },
+  });
   const mutation = useMutation({
     mutationFn: ({ params, payload }: UpdateCommentMutationVariables) =>
       updateComment(params, payload),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: commentsKeys.root() }),
-        queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
-      ]);
-    },
+    onSuccess,
+    onError,
   });
 
   return {
@@ -119,16 +148,23 @@ export function useMutationUpdateComment() {
   };
 }
 
-export function useMutationDeleteComment() {
+export function useMutationDeleteComment(
+  handlers?: MutationHookHandlers<DeleteCommentResponse, DeleteCommentParams>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (params: DeleteCommentParams) => deleteComment(params),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: commentsKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
       ]);
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (params: DeleteCommentParams) => deleteComment(params),
+    onSuccess,
+    onError,
   });
 
   return {

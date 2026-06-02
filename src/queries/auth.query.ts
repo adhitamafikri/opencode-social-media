@@ -7,8 +7,17 @@ import {
   profileKeys,
   usersKeys,
 } from "@/queries/key-factory";
+import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
 import { login, logout, refreshToken, register } from "@/services/auth.service";
-import type { LoginResponse, RefreshTokenResponse } from "@/types/dto/auth-response";
+import type {
+  LoginResponse,
+  LogoutResponse,
+  RefreshTokenResponse,
+  RegisterResponse,
+} from "@/types/dto/auth-response";
 import type { LoginRequest, RegisterRequest } from "@/types/dto/auth-request";
 import { clearAuthTokens, setAuthTokens } from "@/utils/cookies";
 
@@ -35,13 +44,20 @@ function persistAuthTokens(response: LoginResponse | RefreshTokenResponse): void
   setAuthTokens(accessToken, refreshToken);
 }
 
-export function useMutationRegister() {
+export function useMutationRegister(
+  handlers?: MutationHookHandlers<RegisterResponse, RegisterRequest>,
+) {
   const queryClient = useQueryClient();
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
+      await invalidateSessionScopedQueries(queryClient);
+    },
+  });
   const mutation = useMutation({
     mutationFn: (payload: RegisterRequest) => register(payload),
-    onSuccess: () => {
-      void invalidateSessionScopedQueries(queryClient);
-    },
+    onSuccess,
+    onError,
   });
 
   return {
@@ -54,14 +70,21 @@ export function useMutationRegister() {
   };
 }
 
-export function useMutationLogin() {
+export function useMutationLogin(
+  handlers?: MutationHookHandlers<LoginResponse, LoginRequest>,
+) {
   const queryClient = useQueryClient();
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async (response: LoginResponse) => {
+      persistAuthTokens(response);
+      await invalidateSessionScopedQueries(queryClient);
+    },
+  });
   const mutation = useMutation({
     mutationFn: (payload: LoginRequest) => login(payload),
-    onSuccess: (response) => {
-      persistAuthTokens(response);
-      void invalidateSessionScopedQueries(queryClient);
-    },
+    onSuccess,
+    onError,
   });
 
   return {
@@ -74,14 +97,21 @@ export function useMutationLogin() {
   };
 }
 
-export function useMutationLogout() {
+export function useMutationLogout(
+  handlers?: MutationHookHandlers<LogoutResponse, void>,
+) {
   const queryClient = useQueryClient();
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
+      clearAuthTokens();
+      await invalidateSessionScopedQueries(queryClient);
+    },
+  });
   const mutation = useMutation({
     mutationFn: () => logout(),
-    onSuccess: () => {
-      clearAuthTokens();
-      void invalidateSessionScopedQueries(queryClient);
-    },
+    onSuccess,
+    onError,
   });
 
   return {
@@ -94,14 +124,21 @@ export function useMutationLogout() {
   };
 }
 
-export function useMutationRefreshToken() {
+export function useMutationRefreshToken(
+  handlers?: MutationHookHandlers<RefreshTokenResponse, void>,
+) {
   const queryClient = useQueryClient();
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async (response: RefreshTokenResponse) => {
+      persistAuthTokens(response);
+      await invalidateSessionScopedQueries(queryClient);
+    },
+  });
   const mutation = useMutation({
     mutationFn: () => refreshToken(),
-    onSuccess: (response) => {
-      persistAuthTokens(response);
-      void invalidateSessionScopedQueries(queryClient);
-    },
+    onSuccess,
+    onError,
   });
 
   return {

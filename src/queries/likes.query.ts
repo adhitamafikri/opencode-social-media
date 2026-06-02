@@ -1,18 +1,33 @@
 import { useMutation, useQueryClient } from "@tanstack/vue-query";
 import { commentsKeys, postsKeys } from "@/queries/key-factory";
+import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
 import { likeComment, likePost } from "@/services/likes.service";
 import type {
   LikeCommentParams,
   LikePostParams,
 } from "@/types/dto/likes-request";
+import type {
+  LikeCommentResponse,
+  LikePostResponse,
+} from "@/types/dto/likes-response";
 
-export function useMutationLikePost() {
+export function useMutationLikePost(
+  handlers?: MutationHookHandlers<LikePostResponse, LikePostParams>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (params: LikePostParams) => likePost(params),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: postsKeys.root() });
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (params: LikePostParams) => likePost(params),
+    onSuccess,
+    onError,
   });
 
   return {
@@ -25,16 +40,23 @@ export function useMutationLikePost() {
   };
 }
 
-export function useMutationLikeComment() {
+export function useMutationLikeComment(
+  handlers?: MutationHookHandlers<LikeCommentResponse, LikeCommentParams>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (params: LikeCommentParams) => likeComment(params),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: commentsKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
       ]);
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (params: LikeCommentParams) => likeComment(params),
+    onSuccess,
+    onError,
   });
 
   return {

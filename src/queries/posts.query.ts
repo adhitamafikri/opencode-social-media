@@ -2,6 +2,10 @@ import { computed } from "vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { postsKeys } from "@/queries/key-factory";
 import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
+import {
   createPost,
   deletePost,
   getPostById,
@@ -18,6 +22,11 @@ import type {
   GetPostsByUsernameParams,
   UpdatePostRequest,
 } from "@/types/dto/posts-request";
+import type {
+  CreatePostResponse,
+  DeletePostResponse,
+  UpdatePostResponse,
+} from "@/types/dto/posts-response";
 
 type EnabledListQueryOptions = {
   enabled?: boolean;
@@ -168,13 +177,20 @@ export function useQueryGetPostsByUsername(
   };
 }
 
-export function useMutationCreatePost() {
+export function useMutationCreatePost(
+  handlers?: MutationHookHandlers<CreatePostResponse, CreatePostRequest>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (payload: CreatePostRequest) => createPost(payload),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: postsKeys.root() });
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (payload: CreatePostRequest) => createPost(payload),
+    onSuccess,
+    onError,
   });
 
   return {
@@ -187,18 +203,28 @@ export function useMutationCreatePost() {
   };
 }
 
-export function useMutationUpdatePost() {
+export function useMutationUpdatePost(
+  handlers?: MutationHookHandlers<UpdatePostResponse, UpdatePostMutationVariables>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: ({ params, payload }: UpdatePostMutationVariables) =>
-      updatePost(params, payload),
-    onSuccess: async (_, variables) => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async (
+      _: UpdatePostResponse,
+      variables: UpdatePostMutationVariables,
+    ) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.byId(variables.params.postId) }),
       ]);
     },
   });
+  const mutation = useMutation({
+    mutationFn: ({ params, payload }: UpdatePostMutationVariables) =>
+      updatePost(params, payload),
+    onSuccess,
+    onError,
+  });
 
   return {
     data: mutation.data,
@@ -210,16 +236,26 @@ export function useMutationUpdatePost() {
   };
 }
 
-export function useMutationDeletePost() {
+export function useMutationDeletePost(
+  handlers?: MutationHookHandlers<DeletePostResponse, DeletePostParams>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (params: DeletePostParams) => deletePost(params),
-    onSuccess: async (_, variables) => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async (
+      _: DeletePostResponse,
+      variables: DeletePostParams,
+    ) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.byId(variables.postId) }),
       ]);
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (params: DeletePostParams) => deletePost(params),
+    onSuccess,
+    onError,
   });
 
   return {

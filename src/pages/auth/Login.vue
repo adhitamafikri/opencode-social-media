@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useField, useForm } from "vee-validate";
 import { useMutationLogin } from "@/queries/auth.query";
@@ -73,17 +73,35 @@ const { value: password, errorMessage: passwordError } = useField<string>(
   validatePassword,
 );
 
-const { error, mutateAsync, pending, reset } = useMutationLogin();
+const submitAlertMessage = ref<string>("");
+
+const { error, mutateAsync, pending, reset } = useMutationLogin({
+  onSuccess: async () => {
+    submitAlertMessage.value = "";
+    await router.replace("/p");
+  },
+  onError: (mutationError: unknown) => {
+    submitAlertMessage.value = resolveLoginAlertMessage(mutationError);
+  },
+});
 
 const submitError = computed<string>(() => {
-  const message = error.value;
+  return submitAlertMessage.value || resolveLoginAlertMessage(error.value);
+});
 
-  if (!message) {
+const onSubmit = handleSubmit(async (values: LoginFormValues) => {
+  reset();
+  submitAlertMessage.value = "";
+  await mutateAsync(values);
+});
+
+function resolveLoginAlertMessage(error: unknown): string {
+  if (!error) {
     return "";
   }
 
-  if (typeof message === "object" && message !== null && "response" in message) {
-    const response = Reflect.get(message, "response");
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = Reflect.get(error, "response");
 
     if (typeof response === "object" && response !== null && "data" in response) {
       const data = Reflect.get(response, "data");
@@ -98,18 +116,12 @@ const submitError = computed<string>(() => {
     }
   }
 
-  if (message instanceof Error) {
-    return message.message;
+  if (error instanceof Error) {
+    return error.message;
   }
 
   return "Unable to login. Please try again.";
-});
-
-const onSubmit = handleSubmit(async (values: LoginFormValues) => {
-  reset();
-  await mutateAsync(values);
-  await router.replace("/p");
-});
+}
 
 function validateUsername(value: string | undefined): true | string {
   if (!value?.trim()) {

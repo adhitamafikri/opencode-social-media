@@ -1,9 +1,14 @@
 import { computed } from "vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { bookmarksKeys, postsKeys } from "@/queries/key-factory";
+import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
 import { bookmarkPost, listBookmarks } from "@/services/bookmarks.service";
 import type { PaginatedRequest } from "@/types/dto/base-request";
 import type { BookmarkPostParams } from "@/types/dto/bookmarks-request";
+import type { BookmarkPostResponse } from "@/types/dto/bookmarks-response";
 
 type ListBookmarksQueryOptions = {
   enabled?: boolean;
@@ -47,16 +52,23 @@ export function useQueryGetBookmarks(options: ListBookmarksQueryOptions = {}) {
   };
 }
 
-export function useMutationBookmarkPost() {
+export function useMutationBookmarkPost(
+  handlers?: MutationHookHandlers<BookmarkPostResponse, BookmarkPostParams>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (params: BookmarkPostParams) => bookmarkPost(params),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: bookmarksKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
       ]);
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (params: BookmarkPostParams) => bookmarkPost(params),
+    onSuccess,
+    onError,
   });
 
   return {

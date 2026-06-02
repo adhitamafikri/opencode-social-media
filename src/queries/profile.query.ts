@@ -2,6 +2,10 @@ import { computed } from "vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { postsKeys, profileKeys } from "@/queries/key-factory";
 import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
+import {
   getMyProfile,
   getProfileByUsername,
   updateProfile,
@@ -10,6 +14,7 @@ import type {
   GetProfileByUsernameParams,
   UpdateProfileRequest,
 } from "@/types/dto/profile-request";
+import type { UpdateProfileResponse } from "@/types/dto/profile-response";
 
 type GetProfileByUsernameQueryOptions = {
   enabled?: boolean;
@@ -73,16 +78,23 @@ export function useQueryGetProfileByUsername(
   };
 }
 
-export function useMutationUpdateProfile() {
+export function useMutationUpdateProfile(
+  handlers?: MutationHookHandlers<UpdateProfileResponse, UpdateProfileRequest>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (payload: UpdateProfileRequest) => updateProfile(payload),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: profileKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
       ]);
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (payload: UpdateProfileRequest) => updateProfile(payload),
+    onSuccess,
+    onError,
   });
 
   return {

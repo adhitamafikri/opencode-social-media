@@ -1,6 +1,10 @@
 import { computed } from "vue";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { followKeys, postsKeys, profileKeys } from "@/queries/key-factory";
+import {
+  composeMutationHandlers,
+  type MutationHookHandlers,
+} from "@/queries/mutation-handlers";
 import { followUser, listFollowers, listFollowing } from "@/services/follow.service";
 import type { PaginatedRequest } from "@/types/dto/base-request";
 import type {
@@ -8,6 +12,7 @@ import type {
   FollowingListParams,
   FollowUserParams,
 } from "@/types/dto/follow-request";
+import type { FollowUserResponse } from "@/types/dto/follow-response";
 
 type GetFollowersQueryOptions = {
   enabled?: boolean;
@@ -101,17 +106,24 @@ export function useQueryGetFollowing(options: GetFollowingQueryOptions) {
   };
 }
 
-export function useMutationFollowUser() {
+export function useMutationFollowUser(
+  handlers?: MutationHookHandlers<FollowUserResponse, FollowUserParams>,
+) {
   const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: (params: FollowUserParams) => followUser(params),
-    onSuccess: async () => {
+  const { onError, onSuccess } = composeMutationHandlers({
+    handlers,
+    internalOnSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: followKeys.root() }),
         queryClient.invalidateQueries({ queryKey: profileKeys.root() }),
         queryClient.invalidateQueries({ queryKey: postsKeys.root() }),
       ]);
     },
+  });
+  const mutation = useMutation({
+    mutationFn: (params: FollowUserParams) => followUser(params),
+    onSuccess,
+    onError,
   });
 
   return {
