@@ -8,7 +8,9 @@ import {
   usersKeys,
 } from "@/queries/key-factory";
 import { login, logout, refreshToken, register } from "@/services/auth.service";
+import type { LoginResponse, RefreshTokenResponse } from "@/types/dto/auth-response";
 import type { LoginRequest, RegisterRequest } from "@/types/dto/auth-request";
+import { clearAuthTokens, setAuthTokens } from "@/utils/cookies";
 
 async function invalidateSessionScopedQueries(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -23,12 +25,22 @@ async function invalidateSessionScopedQueries(
   ]);
 }
 
+function persistAuthTokens(response: LoginResponse | RefreshTokenResponse): void {
+  const { accessToken, refreshToken } = response.data;
+
+  if (!accessToken || !refreshToken) {
+    throw new Error("Authentication response is missing tokens.");
+  }
+
+  setAuthTokens(accessToken, refreshToken);
+}
+
 export function useMutationRegister() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (payload: RegisterRequest) => register(payload),
-    onSuccess: async () => {
-      await invalidateSessionScopedQueries(queryClient);
+    onSuccess: () => {
+      void invalidateSessionScopedQueries(queryClient);
     },
   });
 
@@ -46,8 +58,9 @@ export function useMutationLogin() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: (payload: LoginRequest) => login(payload),
-    onSuccess: async () => {
-      await invalidateSessionScopedQueries(queryClient);
+    onSuccess: (response) => {
+      persistAuthTokens(response);
+      void invalidateSessionScopedQueries(queryClient);
     },
   });
 
@@ -65,8 +78,9 @@ export function useMutationLogout() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => logout(),
-    onSuccess: async () => {
-      await invalidateSessionScopedQueries(queryClient);
+    onSuccess: () => {
+      clearAuthTokens();
+      void invalidateSessionScopedQueries(queryClient);
     },
   });
 
@@ -84,8 +98,9 @@ export function useMutationRefreshToken() {
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () => refreshToken(),
-    onSuccess: async () => {
-      await invalidateSessionScopedQueries(queryClient);
+    onSuccess: (response) => {
+      persistAuthTokens(response);
+      void invalidateSessionScopedQueries(queryClient);
     },
   });
 

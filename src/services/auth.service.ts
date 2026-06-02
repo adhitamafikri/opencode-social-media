@@ -1,4 +1,4 @@
-import { apiClient } from "@/configs/axios.client";
+import { apiClient, createRefreshTokenRequestConfig } from "@/configs/axios.client";
 import { API_ENDPOINTS } from "@/configs/api";
 import type { LoginRequest, RegisterRequest } from "@/types/dto/auth-request";
 import type {
@@ -39,6 +39,8 @@ export async function logout(): Promise<LogoutResponse> {
 export async function refreshToken(): Promise<RefreshTokenResponse> {
   const { data } = await apiClient.post<RefreshTokenResponse>(
     `${API_ENDPOINTS.users}/refresh-token`,
+    undefined,
+    createRefreshTokenRequestConfig(),
   );
 
   return data;
